@@ -10,6 +10,8 @@ export default function FormProduk({ action, produk = {}, labelTombol = "Simpan 
 
   return (
     <form action={formAction} className="flex max-w-xl flex-col gap-4">
+      {produk?.id && <input type="hidden" name="id" value={produk.id} />}
+
       {state?.error && (
         <div className="rounded-xl border border-garis bg-permukaan p-3.5 text-sm text-bahaya">
           {state.error}

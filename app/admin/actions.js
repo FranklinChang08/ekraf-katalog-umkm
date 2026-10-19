@@ -179,4 +179,93 @@ export async function tambahProduk(prevStateOrFormData, maybeFormData) {
   redirect("/admin?sukses=" + encodeURIComponent("Produk berhasil ditambahkan."));
 }
 
-export { gantiPassword as ubahPassword };
+export async function ubahProduk(idOrPrevState, prevStateOrFormData, maybeFormData) {
+  let id = null;
+  let formData = null;
+  let isActionState = false;
+
+  if (
+    typeof idOrPrevState === "number" ||
+    (typeof idOrPrevState === "string" && !isNaN(Number(idOrPrevState)))
+  ) {
+    id = Number(idOrPrevState);
+    formData = maybeFormData instanceof FormData ? maybeFormData : prevStateOrFormData;
+    isActionState = maybeFormData instanceof FormData;
+  } else {
+    formData = maybeFormData instanceof FormData ? maybeFormData : idOrPrevState;
+    isActionState = maybeFormData instanceof FormData;
+    id = Number(formData?.get ? formData.get("id") : null);
+  }
+
+  // 1. Verifikasi admin sudah login di server
+  const supabase = await createSessionClient();
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+
+  if (userError || !user) {
+    if (isActionState) return { error: "Sesi telah berakhir. Silakan login kembali." };
+    redirect("/admin/login?error=" + encodeURIComponent("Silakan login terlebih dahulu."));
+  }
+
+  if (!id || isNaN(id)) {
+    const msg = "ID produk tidak valid.";
+    if (isActionState) return { error: msg };
+    redirect(`/admin?error=${encodeURIComponent(msg)}`);
+  }
+
+  // 2. Ambil data dari form
+  const nama = formData?.get ? formData.get("nama")?.toString().trim() : "";
+  const hargaRaw = formData?.get ? formData.get("harga") : null;
+  const kategori = formData?.get ? formData.get("kategori")?.toString().trim() || null : null;
+  const fotoUrl = formData?.get ? formData.get("foto_url")?.toString().trim() || null : null;
+  const deskripsi = formData?.get ? formData.get("deskripsi")?.toString().trim() || null : null;
+
+  // 3. Validasi input
+  if (!nama) {
+    const msg = "Nama produk wajib diisi.";
+    if (isActionState) return { error: msg };
+    redirect(`/admin/produk/${id}/ubah?error=${encodeURIComponent(msg)}`);
+  }
+
+  if (hargaRaw === null || hargaRaw === "" || isNaN(Number(hargaRaw))) {
+    const msg = "Harga produk wajib diisi dengan angka.";
+    if (isActionState) return { error: msg };
+    redirect(`/admin/produk/${id}/ubah?error=${encodeURIComponent(msg)}`);
+  }
+
+  const harga = Number(hargaRaw);
+  if (harga < 0) {
+    const msg = "Harga produk tidak boleh bernilai negatif.";
+    if (isActionState) return { error: msg };
+    redirect(`/admin/produk/${id}/ubah?error=${encodeURIComponent(msg)}`);
+  }
+
+  // 4. Update data di database Supabase tabel "produk"
+  const { error: updateError } = await supabase
+    .from("produk")
+    .update({
+      nama,
+      harga: Math.round(harga),
+      kategori,
+      foto_url: fotoUrl,
+      deskripsi,
+    })
+    .eq("id", id);
+
+  if (updateError) {
+    const msg = updateError.message || "Gagal memperbarui produk di database.";
+    if (isActionState) return { error: msg };
+    redirect(`/admin/produk/${id}/ubah?error=${encodeURIComponent(msg)}`);
+  }
+
+  // 5. Invalidate cache dan alihkan kembali ke /admin dengan notifikasi sukses
+  revalidatePath("/", "layout");
+  revalidatePath("/admin");
+  revalidatePath(`/produk/${id}`);
+  revalidatePath(`/admin/produk/${id}/ubah`);
+  redirect("/admin?sukses=" + encodeURIComponent("Produk berhasil diperbarui."));
+}
+
+export { gantiPassword as ubahPassword, ubahProduk as editProduk };
