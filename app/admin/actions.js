@@ -43,6 +43,20 @@ export async function logout() {
   redirect("/admin/login");
 }
 
+export async function requireAuth() {
+  const supabase = await createSessionClient();
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser();
+
+  if (error || !user) {
+    redirect("/admin/login?error=" + encodeURIComponent("Silakan login terlebih dahulu."));
+  }
+
+  return { user, supabase };
+}
+
 export async function gantiPassword(prevStateOrFormData, maybeFormData) {
   const formData = maybeFormData instanceof FormData ? maybeFormData : prevStateOrFormData;
   const isActionState = maybeFormData instanceof FormData;
