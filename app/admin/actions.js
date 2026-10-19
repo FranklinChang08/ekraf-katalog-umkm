@@ -288,3 +288,49 @@ export async function ubahPassword(...args) {
 export async function editProduk(...args) {
   return ubahProduk(...args);
 }
+
+export async function hapusProduk(idOrFormData) {
+  let id = null;
+  if (idOrFormData instanceof FormData) {
+    id = Number(idOrFormData.get("id"));
+  } else if (typeof idOrFormData === "number" || typeof idOrFormData === "string") {
+    id = Number(idOrFormData);
+  }
+
+  // 1. Verifikasi admin sudah login di server
+  const supabase = await createSessionClient();
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+
+  if (userError || !user) {
+    redirect("/admin/login?error=" + encodeURIComponent("Silakan login terlebih dahulu."));
+  }
+
+  if (!id || isNaN(id)) {
+    return { error: "ID produk tidak valid." };
+  }
+
+  // 2. Hapus produk dari database Supabase
+  const { error: deleteError } = await supabase
+    .from("produk")
+    .delete()
+    .eq("id", id);
+
+  if (deleteError) {
+    return { error: deleteError.message || "Gagal menghapus produk dari database." };
+  }
+
+  // 3. Invalidate cache rute terkait
+  revalidatePath("/", "layout");
+  revalidatePath("/admin");
+  revalidatePath(`/produk/${id}`);
+
+  return { sukses: true, pesan: "Produk berhasil dihapus." };
+}
+
+export async function deleteProduk(...args) {
+  return hapusProduk(...args);
+}
+
