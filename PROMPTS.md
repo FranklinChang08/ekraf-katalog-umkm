@@ -12,6 +12,17 @@ Ubah app/page.jsx supaya daftar produk diambil dari tabel "produk" di Supabase, 
 Tampilkan produk dengan komponen KartuProduk yang sudah ada, tanpa mengubah tampilannya. Kalau gagal mengambil data, tampilkan pesan error yang jelas di halaman. Kalau tabel kosong, tampilkan tulisan "Belum ada produk". Hapus CatatanBelumAktif dari halaman ini.
 
 **Hasil:**
+Pekerjaan untuk US-01 (Katalog dari database) telah selesai.
+
+Perubahan yang Dilakukan
+Membuat koneksi Supabase server di lib/supabase/server.js dan lib/supabase/index.js:
+Membuat helper createServerClient() menggunakan @supabase/supabase-js dengan SUPABASE_URL dan SUPABASE_SECRET_KEY dari environment variable di sisi server.
+Memperbarui app/page.jsx:
+Mengambil data produk langsung dari tabel produk di Supabase secara server-side (Server Component).
+Menampilkan produk menggunakan komponen KartuProduk tanpa mengubah tampilannya.
+Menghapus komponen CatatanBelumAktif dan impor produkContoh.
+Menambahkan penanganan jika tabel kosong: menampilkan teks "Belum ada produk".
+Menambahkan penanganan jika terjadi error saat memuat data: menampilkan kotak pesan error yang jelas.
 
 **Perbaikan:**
 
@@ -23,6 +34,15 @@ Baca docs/user-stories.md bagian US-02.
 Ubah app/produk/[id]/page.jsx supaya mengambil satu produk dari tabel "produk" di Supabase berdasarkan id di URL, di sisi server, memakai koneksi Supabase yang sudah dibuat di lib/supabase. Kalau produk tidak ditemukan, panggil notFound(). Jangan ubah tampilannya. Hapus CatatanBelumAktif dari halaman ini, tapi biarkan tombol WhatsApp.
 
 **Hasil:**
+Pekerjaan untuk US-02 (Detail produk) telah selesai.
+
+Perubahan yang Dilakukan
+app/produk/[id]/page.jsx:
+Mengambil id dari params secara asynchronous (const { id } = await params).
+Mengambil data produk spesifik dari tabel produk di Supabase secara server-side menggunakan createServerClient() dari @/lib/supabase/server.
+Memanggil notFound() jika produk tidak ditemukan di database atau jika terjadi error kueri.
+Mempertahankan tampilan dan susunan elemen termasuk tombol TombolWhatsApp.
+Menghapus komponen CatatanBelumAktif dan impor cariProdukContoh.
 
 **Perbaikan:**
 

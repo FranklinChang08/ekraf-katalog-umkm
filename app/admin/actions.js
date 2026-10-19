@@ -111,4 +111,72 @@ export async function gantiPassword(prevStateOrFormData, maybeFormData) {
   redirect("/admin/password?sukses=" + encodeURIComponent("Password berhasil diganti."));
 }
 
+export async function tambahProduk(prevStateOrFormData, maybeFormData) {
+  const formData = maybeFormData instanceof FormData ? maybeFormData : prevStateOrFormData;
+  const isActionState = maybeFormData instanceof FormData;
+
+  // 1. Verifikasi admin sudah login di server
+  const supabase = await createSessionClient();
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+
+  if (userError || !user) {
+    if (isActionState) return { error: "Sesi telah berakhir. Silakan login kembali." };
+    redirect("/admin/login?error=" + encodeURIComponent("Silakan login terlebih dahulu."));
+  }
+
+  // 2. Ambil data dari form
+  const nama = formData?.get ? formData.get("nama")?.toString().trim() : "";
+  const hargaRaw = formData?.get ? formData.get("harga") : null;
+  const kategori = formData?.get ? formData.get("kategori")?.toString().trim() || null : null;
+  const fotoUrl = formData?.get ? formData.get("foto_url")?.toString().trim() || null : null;
+  const deskripsi = formData?.get ? formData.get("deskripsi")?.toString().trim() || null : null;
+
+  // 3. Validasi input
+  if (!nama) {
+    const msg = "Nama produk wajib diisi.";
+    if (isActionState) return { error: msg };
+    redirect(`/admin/produk/baru?error=${encodeURIComponent(msg)}`);
+  }
+
+  if (hargaRaw === null || hargaRaw === "" || isNaN(Number(hargaRaw))) {
+    const msg = "Harga produk wajib diisi dengan angka.";
+    if (isActionState) return { error: msg };
+    redirect(`/admin/produk/baru?error=${encodeURIComponent(msg)}`);
+  }
+
+  const harga = Number(hargaRaw);
+  if (harga < 0) {
+    const msg = "Harga produk tidak boleh bernilai negatif.";
+    if (isActionState) return { error: msg };
+    redirect(`/admin/produk/baru?error=${encodeURIComponent(msg)}`);
+  }
+
+  // 4. Simpan ke database Supabase tabel "produk"
+  const { error: insertError } = await supabase
+    .from("produk")
+    .insert([
+      {
+        nama,
+        harga: Math.round(harga),
+        kategori,
+        foto_url: fotoUrl,
+        deskripsi,
+      },
+    ]);
+
+  if (insertError) {
+    const msg = insertError.message || "Gagal menyimpan produk ke database.";
+    if (isActionState) return { error: msg };
+    redirect(`/admin/produk/baru?error=${encodeURIComponent(msg)}`);
+  }
+
+  // 5. Invalidate cache dan alihkan kembali ke /admin dengan notifikasi sukses
+  revalidatePath("/", "layout");
+  revalidatePath("/admin");
+  redirect("/admin?sukses=" + encodeURIComponent("Produk berhasil ditambahkan."));
+}
+
 export { gantiPassword as ubahPassword };
