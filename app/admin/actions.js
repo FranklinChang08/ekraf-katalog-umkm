@@ -61,10 +61,7 @@ export async function gantiPassword(prevStateOrFormData, maybeFormData) {
   const formData = maybeFormData instanceof FormData ? maybeFormData : prevStateOrFormData;
   const isActionState = maybeFormData instanceof FormData;
 
-  const passwordBaru = formData?.get ? formData.get("password_baru")?.toString() : "";
-  const konfirmasiPassword = formData?.get ? formData.get("konfirmasi_password")?.toString() : "";
-
-  // 1. Verifikasi admin sudah login di server
+  // 1. Verifikasi admin sudah login di server melalui Supabase Auth
   const supabase = await createSessionClient();
   const {
     data: { user },
@@ -72,11 +69,14 @@ export async function gantiPassword(prevStateOrFormData, maybeFormData) {
   } = await supabase.auth.getUser();
 
   if (userError || !user) {
-    if (isActionState) return { error: "Sesi telah berakhir. Silakan login kembali." };
     redirect("/admin/login?error=" + encodeURIComponent("Silakan login terlebih dahulu."));
   }
 
-  // 2. Validasi input di server
+  // 2. Ambil data dari form
+  const passwordBaru = formData?.get ? formData.get("password_baru")?.toString() : "";
+  const konfirmasiPassword = formData?.get ? formData.get("konfirmasi_password")?.toString() : "";
+
+  // 3. Validasi input di server
   if (!passwordBaru || !konfirmasiPassword) {
     const msg = "Semua kolom password wajib diisi.";
     if (isActionState) return { error: msg };
@@ -95,13 +95,26 @@ export async function gantiPassword(prevStateOrFormData, maybeFormData) {
     redirect(`/admin/password?error=${encodeURIComponent(msg)}`);
   }
 
-  // 3. Update password di Supabase Auth
-  const { error: updateError } = await supabase.auth.updateUser({
+  // 4. Update password di Supabase Auth untuk user yang sedang aktif
+  const { data: updateData, error: updateError } = await supabase.auth.updateUser({
     password: passwordBaru,
   });
 
-  if (updateError) {
-    const msg = updateError.message;
+  if (updateError || !updateData?.user) {
+    let msg = "Gagal memperbarui password. Silakan coba lagi.";
+    if (updateError?.message?.includes("different from the old password")) {
+      msg = "Password baru harus berbeda dengan password lama.";
+    } else if (
+      updateError?.message?.includes("at least 6 characters") ||
+      updateError?.message?.includes("at least 8 characters")
+    ) {
+      msg = "Password baru minimal 8 karakter.";
+    } else if (updateError?.status === 429 || updateError?.message?.includes("rate limit")) {
+      msg = "Terlalu banyak permintaan. Silakan tunggu beberapa saat lagi.";
+    } else if (updateError?.message) {
+      msg = updateError.message;
+    }
+
     if (isActionState) return { error: msg };
     redirect(`/admin/password?error=${encodeURIComponent(msg)}`);
   }
@@ -268,4 +281,10 @@ export async function ubahProduk(idOrPrevState, prevStateOrFormData, maybeFormDa
   redirect("/admin?sukses=" + encodeURIComponent("Produk berhasil diperbarui."));
 }
 
-export { gantiPassword as ubahPassword, ubahProduk as editProduk };
+export async function ubahPassword(...args) {
+  return gantiPassword(...args);
+}
+
+export async function editProduk(...args) {
+  return ubahProduk(...args);
+}

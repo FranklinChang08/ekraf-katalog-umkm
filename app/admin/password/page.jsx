@@ -1,12 +1,15 @@
+"use client";
+
+import { useActionState } from "react";
 import NavAdmin from "@/components/NavAdmin";
 import Input from "@/components/Input";
 import Tombol from "@/components/Tombol";
 import { gantiPassword } from "@/app/admin/actions";
 
-export default async function HalamanGantiPassword({ searchParams }) {
-  const params = (await searchParams) || {};
-  const error = params.error;
-  const sukses = params.sukses || params.berhasil;
+export const dynamic = "force-dynamic";
+
+export default function HalamanGantiPassword() {
+  const [state, formAction, isPending] = useActionState(gantiPassword, null);
 
   return (
     <div className="flex flex-col gap-6 py-8">
@@ -18,19 +21,19 @@ export default async function HalamanGantiPassword({ searchParams }) {
         </p>
       </div>
 
-      {error && (
+      {state?.error && (
         <div className="max-w-sm rounded-xl border border-garis bg-permukaan p-3 text-sm text-bahaya">
-          {error}
+          {state.error}
         </div>
       )}
 
-      {sukses && (
+      {state?.sukses && (
         <div className="max-w-sm rounded-xl border border-garis bg-permukaan p-3 text-sm font-medium text-utama">
-          {sukses}
+          {state.sukses}
         </div>
       )}
 
-      <form action={gantiPassword} className="flex max-w-sm flex-col gap-4">
+      <form action={formAction} className="flex max-w-sm flex-col gap-4">
         <Input
           label="Password baru"
           name="password_baru"
@@ -47,8 +50,15 @@ export default async function HalamanGantiPassword({ searchParams }) {
           minLength={8}
           required
         />
-        <Tombol type="submit" className="self-start">
-          Simpan password
+        <Tombol
+          type="submit"
+          disabled={isPending}
+          className="self-start gap-2 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {isPending && (
+            <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+          )}
+          {isPending ? "Menyimpan..." : "Simpan password"}
         </Tombol>
       </form>
     </div>
