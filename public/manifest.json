@@ -1,0 +1,30 @@
+{
+  "name": "Wearhaus Store",
+  "short_name": "Wearhaus Store",
+  "description": "Wearhause Store adalah UMKM di bidang fashion yang menyediakan pakaian berkualitas, modern, dan terjangkau untuk memenuhi kebutuhan gaya berpakaian pelanggan.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#1f6b4f",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
+
